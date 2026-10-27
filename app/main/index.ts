@@ -11,7 +11,7 @@ import { runSmoke } from './smoke'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const smokeMode = process.env.CODE_PULL_SMOKE === '1'
-const relaxSandbox = smokeMode || process.env.CODE_PULL_NO_SANDBOX === '1'
+const relaxSandbox = smokeMode || process.env.CODE_PULL_NO_SANDBOX === '1' || process.platform !== 'win32'
 
 app.setName('Code Pull')
 
@@ -55,8 +55,8 @@ function createWindow(): BrowserWindow {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      // Windows keeps the renderer sandbox. The cloud smoke path turns it off
-      // because this container cannot broker Chromium shared memory.
+      // Windows keeps the renderer sandbox. Other platforms turn it off so the
+      // window can open where Chromium cannot broker its sandbox.
       sandbox: !relaxSandbox,
     },
   })
