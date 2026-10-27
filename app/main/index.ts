@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron'
+import { installChromium } from './chromium-install'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
@@ -110,6 +111,7 @@ app.whenReady().then(() => {
     fetchImpl: smokeMode ? createSmokeFetch() : undefined,
   })
   createWindow()
+  if (!smokeMode) void beginChromiumInstall()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -123,3 +125,21 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   host?.stop()
 })
+
+function beginChromiumInstall(): void {
+  const send = (phase: 'installing' | 'ready' | 'error', detail: string) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send('chromium:progress', { phase, detail })
+    }
+  }
+  void host?.status().then((status) => {
+    if (status.chromiumPath) return
+    send('installing', 'Downloading Chromium into LocalAppData\\CodePullDesktop\\ms-playwright.')
+    return installChromium((line) => send('installing', line))
+      .then(() => send('ready', 'Chromium is ready.'))
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error)
+        send('error', message)
+      })
+  })
+}

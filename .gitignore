@@ -2,6 +2,7 @@ node_modules
 dist
 dist-electron
 release
+release-slim
 build/playwright-browsers
 artifacts/*.exe
 *.log

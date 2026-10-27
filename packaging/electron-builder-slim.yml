@@ -1,0 +1,28 @@
+appId: com.codepull.desktop
+productName: Code Pull
+asar: true
+compression: maximum
+npmRebuild: false
+electronLanguages:
+  - en-US
+directories:
+  output: release-slim
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+asarUnpack:
+  - "**/node_modules/playwright/**"
+  - "**/node_modules/playwright-core/**"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: Code-Pull-Setup-slim.${ext}
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false

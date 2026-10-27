@@ -1,7 +1,8 @@
-import { app, utilityProcess, type UtilityProcess } from 'electron'
+import { utilityProcess, type UtilityProcess } from 'electron'
 import { randomUUID } from 'node:crypto'
 import * as path from 'node:path'
 import type { BrowserHostPong, LinkRetrieveRequest, LinkSignInRequest, RetrieveResultMessage, SignInResultMessage } from '../../adapters/browser-host'
+import { playwrightBrowsersDir } from '../../adapters/nfpa-link/profile'
 import type { HostStatus } from '../../shared/contracts'
 import type { SourceRetrieval } from '../../adapters/types'
 
@@ -148,7 +149,7 @@ export function browserHostPath(dirname: string): string {
 
 function childEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
-  if (app.isPackaged) env.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'playwright-browsers')
+  env.PLAYWRIGHT_BROWSERS_PATH = playwrightBrowsersDir()
   return env
 }
 

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   AskProgress,
+  ChromiumProgress,
   HostStatus,
   LinkSignInResult,
   LinkStatus,
@@ -21,6 +22,14 @@ const api = {
   },
   getHostStatus(): Promise<HostStatus> {
     return ipcRenderer.invoke('host:status')
+  },
+  installChromium(): Promise<{ ok: true } | { ok: false; message: string }> {
+    return ipcRenderer.invoke('chromium:install')
+  },
+  onChromiumProgress(listener: (event: ChromiumProgress) => void): () => void {
+    const wrapped = (_event: IpcRendererEvent, payload: ChromiumProgress) => listener(payload)
+    ipcRenderer.on('chromium:progress', wrapped)
+    return () => ipcRenderer.off('chromium:progress', wrapped)
   },
   getLinkStatus(): Promise<LinkStatus> {
     return ipcRenderer.invoke('link:status')

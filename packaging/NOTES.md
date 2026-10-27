@@ -11,7 +11,9 @@ Native and browser bits cannot stay inside the asar archive:
 
 On Windows, `npm install` runs `electron-rebuild` for keytar. On Linux and macOS that rebuild is skipped so CI can compile the app without a Win32 credential library. Those platforms use the file stub in the app user-data directory.
 
-`npm run pack` downloads the Windows Chromium build that matches this Playwright version and places it in `build/playwright-browsers`. electron-builder copies that folder to `resources/playwright-browsers`. The packaged app sets `PLAYWRIGHT_BROWSERS_PATH` so Abe does not install Node or Chromium after setup.
+`npm run pack:slim` is the installer to hand to a Windows PC. It does not embed Chromium. First launch downloads Chromium into `%LOCALAPPDATA%\CodePullDesktop\ms-playwright`.
+
+`npm run pack` still builds the larger installer. It downloads the Windows Chromium build into `build/playwright-browsers` and electron-builder copies that folder to `resources/playwright-browsers`.
 
 The installer is unsigned. SmartScreen will warn.
 

@@ -12,6 +12,7 @@
     "test": "tsx --test tests/echo.test.ts tests/router.test.ts tests/secrets.test.ts tests/split.test.ts tests/nfpa-link.test.ts tests/upcodes.test.ts",
     "smoke": "npm run build && node scripts/smoke.cjs",
     "pack": "npm run build && node scripts/fetch-win-chromium.mjs && electron-builder --win nsis --x64 --config packaging/electron-builder.yml",
+    "pack:slim": "npm run build && electron-builder --win nsis --x64 --config packaging/electron-builder-slim.yml",
     "rebuild-keytar": "electron-rebuild -f -w keytar",
     "postinstall": "node scripts/postinstall.cjs"
   },

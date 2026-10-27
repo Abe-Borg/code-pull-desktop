@@ -12,6 +12,7 @@ import {
 import type { SourceId } from './browser-host'
 import { AskInputError, routeAsk, splitAsks } from '../../router'
 import { canShowBrowser, type BrowserHost } from './browser-host'
+import { installChromium } from './chromium-install'
 import type { AskMode, LinkStatus, RunAsksRequest, SecretStatus } from '../../shared/contracts'
 
 export function registerIpc(options: {
@@ -92,6 +93,22 @@ export function registerIpc(options: {
   })
 
   ipcMain.handle('host:status', async () => options.host.status())
+
+  ipcMain.handle('chromium:install', async (event) => {
+    const send = (phase: 'installing' | 'ready' | 'error', detail: string) => {
+      if (!event.sender.isDestroyed()) event.sender.send('chromium:progress', { phase, detail })
+    }
+    try {
+      send('installing', 'Downloading Chromium.')
+      await installChromium((line) => send('installing', line))
+      send('ready', 'Chromium is ready.')
+      return { ok: true as const }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      send('error', message)
+      return { ok: false as const, message }
+    }
+  })
 
   registerSiteLogin(options, {
     channel: 'link',

@@ -93,13 +93,13 @@ Sign in to UpCodes the same way: Settings, **Open UpCodes sign-in**, your own ac
 
 ## Prototype install
 
-The unsigned installer is `Code-Pull-Setup.exe`. It is not code-signed. Windows SmartScreen will warn. Choose **More info**, then **Run anyway**.
+Use the slim installer, `Code-Pull-Setup-slim.exe`. It is unsigned. Windows SmartScreen will warn. Choose **More info**, then **Run anyway**. Node is not required after setup.
 
-Chromium for Playwright is inside the installer, so Node is not required after setup.
+The slim installer does not contain Chromium. On first launch, Code Pull downloads Chromium into `%LOCALAPPDATA%\CodePullDesktop\ms-playwright`. That needs an internet connection once. If the download stops, use **Install Chromium** at the bottom of the desk.
 
-1. Copy `Code-Pull-Setup.exe` onto the Windows PC.
+1. Copy `Code-Pull-Setup-slim.exe` onto the Windows PC.
 2. Run it. Leave the install directory at the default, or pick another folder.
-3. Start **Code Pull** from the Start menu.
+3. Start **Code Pull**. Wait until the footer says Chromium is installed.
 4. Paste your Claude API key.
 5. Settings → **Open NFPA LiNK sign-in**. Sign in with your LiNK account.
 6. Settings → **Open UpCodes sign-in**. Sign in with your UpCodes account.
@@ -107,7 +107,7 @@ Chromium for Playwright is inside the installer, so Node is not required after s
 
 What works: Claude key routing, NFPA LiNK pulls, UpCodes pulls for IBC, IRC, IFC, and IMC, and echo cards for other section asks. What is unsigned: the installer and the app. Expect the SmartScreen warning.
 
-Build it from source with `npm run pack`. The NSIS target is `packaging/electron-builder.yml`.
+`npm run pack:slim` writes `release-slim/Code-Pull-Setup-slim.exe`. `npm run pack` still builds the larger `Code-Pull-Setup.exe` that embeds Chromium.
 
 ## Playwright path
 

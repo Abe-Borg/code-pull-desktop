@@ -14,6 +14,11 @@ export interface SecretStatus {
   detail: string | null
 }
 
+export interface ChromiumProgress {
+  phase: 'installing' | 'ready' | 'error'
+  detail: string
+}
+
 export interface HostStatus {
   ready: boolean
   chromiumPath: string | null

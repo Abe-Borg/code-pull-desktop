@@ -21,6 +21,7 @@ export function Workspace({
   const [formError, setFormError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [host, setHost] = useState<HostStatus | null>(null)
+  const [chromiumNote, setChromiumNote] = useState<string | null>(null)
 
   useEffect(() => {
     return window.codePull.onAskProgress((event) => {
@@ -34,11 +35,19 @@ export function Workspace({
 
   useEffect(() => {
     let cancelled = false
-    void window.codePull.getHostStatus().then((next) => {
-      if (!cancelled) setHost(next)
+    const refresh = () => {
+      void window.codePull.getHostStatus().then((next) => {
+        if (!cancelled) setHost(next)
+      })
+    }
+    refresh()
+    const stop = window.codePull.onChromiumProgress((event) => {
+      setChromiumNote(event.detail)
+      if (event.phase === 'ready' || event.phase === 'error') refresh()
     })
     return () => {
       cancelled = true
+      stop()
     }
   }, [])
 
@@ -169,6 +178,19 @@ export function Workspace({
           <p data-testid="host-status" className="mt-1">
             Source browser: {host ? host.detail : 'Checking the Playwright host…'}
           </p>
+          {chromiumNote ? <p className="mt-1">{chromiumNote}</p> : null}
+          {host && !host.chromiumPath ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              data-testid="install-chromium"
+              onClick={() => void window.codePull.installChromium()}
+            >
+              Install Chromium
+            </Button>
+          ) : null}
         </footer>
       </main>
     </div>

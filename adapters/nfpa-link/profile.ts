@@ -33,6 +33,19 @@ export function upcodesProfileDir(input?: {
   return join(profileRoot(platform, env, home, join), 'browser-profile-upcodes')
 }
 
+/** Playwright browser cache. Windows: %LOCALAPPDATA%\CodePullDesktop\ms-playwright */
+export function playwrightBrowsersDir(input?: {
+  platform?: NodeJS.Platform
+  env?: NodeJS.ProcessEnv
+  homedir?: string
+}): string {
+  const platform = input?.platform ?? process.platform
+  const env = input?.env ?? process.env
+  const home = input?.homedir ?? os.homedir()
+  const join = platform === 'win32' ? path.win32.join : path.posix.join
+  return join(profileRoot(platform, env, home, join), 'ms-playwright')
+}
+
 function profileRoot(
   platform: NodeJS.Platform,
   env: NodeJS.ProcessEnv,

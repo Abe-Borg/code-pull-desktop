@@ -3,7 +3,7 @@ import * as path from 'node:path'
 import { describe, it } from 'node:test'
 import { handleHostRequest } from '../adapters/nfpa-link/handle'
 import { excerptAround, readLinkPage } from '../adapters/nfpa-link/interpret'
-import { browserProfileDir } from '../adapters/nfpa-link/profile'
+import { browserProfileDir, playwrightBrowsersDir } from '../adapters/nfpa-link/profile'
 import { retrieveNfpaLink, type LinkDriver, type LinkSession } from '../adapters/nfpa-link/session'
 import { linkUrls, parseNfpaTarget } from '../adapters/nfpa-link/target'
 import type { PageSnapshot } from '../adapters/nfpa-link/interpret'
@@ -46,6 +46,15 @@ describe('browser profile path', () => {
       dir,
       path.win32.join('C:\\Users\\ada\\AppData\\Local', 'CodePullDesktop', 'browser-profile'),
     )
+  })
+
+  it('puts the Playwright browser cache in ms-playwright on Windows', () => {
+    const dir = playwrightBrowsersDir({
+      platform: 'win32',
+      env: { LOCALAPPDATA: 'C:\\Users\\ada\\AppData\\Local' },
+      homedir: 'C:\\Users\\ada',
+    })
+    assert.equal(dir, path.win32.join('C:\\Users\\ada\\AppData\\Local', 'CodePullDesktop', 'ms-playwright'))
   })
 
   it('uses the XDG data home on Linux', () => {

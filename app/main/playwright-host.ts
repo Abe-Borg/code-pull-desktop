@@ -51,8 +51,8 @@ async function reportChromium(): Promise<{ ready: boolean; chromiumPath: string 
       ready: true,
       chromiumPath: installed ? chromiumPath : null,
       detail: installed
-        ? 'Chromium is installed. NFPA LiNK uses the persistent browser profile.'
-        : 'Playwright is loaded. Install Chromium with npx playwright install chromium before NFPA LiNK can open.',
+        ? 'Chromium is installed. NFPA LiNK and UpCodes use their own browser profiles.'
+        : 'Chromium is not downloaded yet. First launch saves it under CodePullDesktop\\ms-playwright.',
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
