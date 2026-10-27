@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "start": "electron .",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test tests/echo.test.ts tests/router.test.ts tests/secrets.test.ts tests/split.test.ts",
     "smoke": "npm run build && node scripts/smoke.cjs",
     "pack": "npm run build && electron-builder --config packaging/electron-builder.json5",
     "rebuild-keytar": "electron-rebuild -f -w keytar",

@@ -88,7 +88,7 @@ npm test
 npm run smoke
 ```
 
-`npm run smoke` builds, launches Electron, stores a fake key through the onboarding screen, and checks an echo card plus an unsupported card. On Linux without a display it uses `xvfb-run`. Smoke mode never calls the Claude API. It uses an in-process stand-in so the card path can be checked without a key that bills.
+`npm run smoke` builds, launches Electron, stores a fake key through the onboarding screen, and checks an echo card plus an unsupported card. On Linux without a display it uses `xvfb-run`. The smoke script turns the renderer sandbox off (`CODE_PULL_NO_SANDBOX=1`) because some Linux containers cannot broker Chromium shared memory. A normal Windows launch keeps the sandbox on. Smoke mode never calls the Claude API. It uses an in-process stand-in so the card path can be checked without a key that bills.
 
 ## Out of scope here
 

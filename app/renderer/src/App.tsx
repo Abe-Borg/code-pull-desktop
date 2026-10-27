@@ -21,6 +21,11 @@ export function App() {
   }, [])
 
   useEffect(() => {
+    if (!window.codePull) {
+      setBootError('This page has no Code Pull bridge. Launch the Electron window with npm run dev or npm start.')
+      setPhase('boot-error')
+      return
+    }
     void refresh().catch((error: unknown) => {
       setBootError(error instanceof Error ? error.message : String(error))
       setPhase('boot-error')

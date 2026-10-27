@@ -23,10 +23,17 @@ export default defineConfig(({ command }) => ({
         build: {
           outDir: distElectron,
           emptyOutDir: true,
+          lib: {
+            entry: path.resolve(rootDir, 'app/main/preload.ts'),
+            formats: ['cjs'],
+            fileName: () => 'preload.cjs',
+          },
           rollupOptions: {
             output: {
-              format: 'es',
-              entryFileNames: 'preload.mjs',
+              // Sandboxed preloads load as classic scripts, so this file is CommonJS.
+              format: 'cjs',
+              inlineDynamicImports: true,
+              entryFileNames: 'preload.cjs',
             },
           },
         },

@@ -52,10 +52,12 @@ function createWindow(): BrowserWindow {
     backgroundColor: '#f3efe4',
     title: 'Code Pull',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // Windows keeps the renderer sandbox. The cloud smoke path turns it off
+      // because this container cannot broker Chromium shared memory.
+      sandbox: !relaxSandbox,
     },
   })
 
@@ -70,15 +72,26 @@ function createWindow(): BrowserWindow {
 
   if (smokeMode) {
     const artifactDir = path.resolve(process.cwd(), 'smoke-artifacts')
+    const timer = setTimeout(() => {
+      console.error('Smoke timed out.')
+      app.exit(1)
+    }, 45_000)
     win.webContents.on('console-message', (event) => {
       if (event.level === 'warning' || event.level === 'error') {
         console.error(`[renderer] ${event.message}`)
       }
     })
+    win.webContents.on('render-process-gone', (_event, details) => {
+      console.error(`Renderer gone: ${details.reason} (exit ${details.exitCode})`)
+    })
     win.webContents.once('did-finish-load', () => {
       void runSmoke(win, artifactDir).then(
-        () => app.exit(0),
+        () => {
+          clearTimeout(timer)
+          app.exit(0)
+        },
         (error: unknown) => {
+          clearTimeout(timer)
           console.error(error instanceof Error ? error.stack ?? error.message : error)
           app.exit(1)
         },
