@@ -1,0 +1,26 @@
+appId: com.codepull.desktop
+productName: Code Pull
+asar: true
+npmRebuild: true
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+asarUnpack:
+  - "**/node_modules/keytar/**"
+  - "**/node_modules/playwright/**"
+  - "**/node_modules/playwright-core/**"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup.${ext}
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false

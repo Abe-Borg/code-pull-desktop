@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3efe4;
+  --foreground: #1c1915;
+  --card: #fffdf8;
+  --card-foreground: #1c1915;
+  --primary: #1e3d34;
+  --primary-foreground: #f4f0e6;
+  --secondary: #e7e0d2;
+  --secondary-foreground: #1c1915;
+  --muted: #e7e0d2;
+  --muted-foreground: #5e584e;
+  --accent: #efe7d6;
+  --accent-foreground: #1c1915;
+  --destructive: #8f2d22;
+  --destructive-foreground: #fff7f4;
+  --border: #d9d0c0;
+  --input: #d4cbb8;
+  --ring: #1e3d34;
+  --radius: 0.7rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  --font-mono: Consolas, "Cascadia Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+::selection {
+  background: #d8e4dc;
+}

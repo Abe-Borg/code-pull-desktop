@@ -1,0 +1,47 @@
+{
+  "name": "code-pull-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Windows desktop app for pulling code and standard sections with your own Claude API key.",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "start": "electron .",
+    "test": "tsx --test tests/**/*.test.ts",
+    "smoke": "npm run build && node scripts/smoke.cjs",
+    "pack": "npm run build && electron-builder --config packaging/electron-builder.json5",
+    "rebuild-keytar": "electron-rebuild -f -w keytar",
+    "postinstall": "node scripts/postinstall.cjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.545.0",
+    "playwright": "^1.56.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "^38.3.0",
+    "electron-builder": "^26.0.12",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.10",
+    "vite-plugin-electron": "^0.29.1"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
+  }
+}

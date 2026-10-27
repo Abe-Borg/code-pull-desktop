@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-electron
+release
+*.log
+.env
+.env.*
+.DS_Store
+smoke-artifacts
+agent-tools
+playwright-report
+test-results
