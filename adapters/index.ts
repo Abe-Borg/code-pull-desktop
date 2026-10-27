@@ -1,3 +1,5 @@
 export { buildEchoAnswer, citationForAsk, echoAdapter } from './echo'
-export type { BrowserHostPing, BrowserHostPong } from './browser-host'
-export type { SectionAdapter, SectionAnswer } from './types'
+export { browserProfileDir } from './nfpa-link/profile'
+export { retrieveUpcodes } from './upcodes'
+export type { BrowserHostPong, LinkRetrieveRequest, LinkSignInRequest } from './browser-host'
+export type { SectionAdapter, SectionAnswer, SourceRetrieval } from './types'

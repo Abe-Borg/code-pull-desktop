@@ -4,9 +4,10 @@ export const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const SYSTEM_PROMPT = [
   'You route asks inside Code Pull, a desktop app that retrieves building-code and standards sections.',
   'Classify the user ask.',
-  'Use intent "echo" when they want the text of a code or standard section (NFPA, IBC, IRC, IFC, IMC, NEC, ASME, ASTM, or a named section).',
+  'Use intent "nfpa-link" when they want the text of an NFPA code or standard section (NFPA 101, NFPA 13, NFPA 70, and similar).',
+  'Use intent "echo" when they want a non-NFPA code section (IBC, IRC, IFC, IMC, ASME, ASTM, or a named section that is not NFPA).',
   'Use intent "unsupported" for chat, drafting, calculation, or anything that is not a section retrieval.',
-  'Reply with JSON only: {"intent":"echo"|"unsupported","reason":"one short sentence"}',
+  'Reply with JSON only: {"intent":"nfpa-link"|"echo"|"unsupported","reason":"one short sentence"}',
 ].join(' ')
 
 export class RouterFailure extends Error {
@@ -17,7 +18,7 @@ export class RouterFailure extends Error {
 }
 
 export interface Classification {
-  intent: 'echo' | 'unsupported'
+  intent: 'echo' | 'nfpa-link' | 'unsupported'
   reason: string
 }
 
@@ -47,7 +48,7 @@ export async function classifyAsk(
               type: 'object',
               additionalProperties: false,
               properties: {
-                intent: { type: 'string', enum: ['echo', 'unsupported'] },
+                intent: { type: 'string', enum: ['echo', 'nfpa-link', 'unsupported'] },
                 reason: { type: 'string' },
               },
               required: ['intent', 'reason'],
@@ -164,12 +165,13 @@ export function parseClassification(text: string): Classification {
 
   const intent = (parsed as { intent?: unknown }).intent
   const reason = (parsed as { reason?: unknown }).reason
-  if (intent !== 'echo' && intent !== 'unsupported') {
+  const normalized = intent === 'link' ? 'nfpa-link' : intent
+  if (normalized !== 'echo' && normalized !== 'nfpa-link' && normalized !== 'unsupported') {
     throw new RouterFailure('Claude returned an unknown intent.')
   }
 
   return {
-    intent,
+    intent: normalized,
     reason: typeof reason === 'string' ? reason.trim() : '',
   }
 }

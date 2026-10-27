@@ -4,6 +4,7 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import { describe, it } from 'node:test'
 import { FileStubSecretStore } from '../secrets/file-stub'
+import { LINK_PASSWORD_ACCOUNT } from '../secrets/types'
 import { validateClaudeKey } from '../secrets/validate'
 
 describe('file stub secret store', () => {
@@ -16,6 +17,11 @@ describe('file stub secret store', () => {
     assert.equal(mode, 0o600)
     assert.equal(await store.get(), 'sk-ant-test-key-123456')
     await store.delete()
+    assert.equal(await store.get(), null)
+    await store.set('link-password', LINK_PASSWORD_ACCOUNT)
+    const passwordMode = fs.statSync(store.location(LINK_PASSWORD_ACCOUNT)).mode & 0o777
+    assert.equal(passwordMode, 0o600)
+    assert.equal(await store.get(LINK_PASSWORD_ACCOUNT), 'link-password')
     assert.equal(await store.get(), null)
   })
 })

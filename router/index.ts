@@ -1,4 +1,6 @@
 import { buildEchoAnswer } from '../adapters/echo'
+import type { SourceRetrieval } from '../adapters/types'
+import { isClearNfpaSectionAsk } from '../adapters/nfpa-link/target'
 import type { AskResult } from '../shared/contracts'
 import { classifyAsk, redact, type Classification } from './claude'
 
@@ -6,6 +8,7 @@ export async function routeAsk(options: {
   ask: string
   apiKey: string | null
   fetchImpl?: typeof fetch
+  retrieveLink?: (ask: string) => Promise<SourceRetrieval>
 }): Promise<AskResult> {
   const ask = options.ask.trim()
   if (!options.apiKey) {
@@ -30,6 +33,10 @@ export async function routeAsk(options: {
     }
   }
 
+  if (shouldUseNfpaLink(ask, classification)) {
+    return pullFromLink(ask, classification, options.retrieveLink)
+  }
+
   if (classification.intent === 'unsupported') {
     return {
       ask,
@@ -37,7 +44,7 @@ export async function routeAsk(options: {
       intent: 'unsupported',
       message: classification.reason
         ? `Unsupported. ${classification.reason}`
-        : 'Unsupported. Code Pull routes section lookups only. LiNK and UpCodes adapters are not connected.',
+        : 'Unsupported. Code Pull routes section lookups only.',
     }
   }
 
@@ -49,6 +56,43 @@ export async function routeAsk(options: {
     routerReason: classification.reason,
     quotedText: answer.quotedText,
     citation: answer.citation,
+  }
+}
+
+function shouldUseNfpaLink(ask: string, classification: Classification): boolean {
+  return classification.intent === 'nfpa-link' || isClearNfpaSectionAsk(ask)
+}
+
+async function pullFromLink(
+  ask: string,
+  classification: Classification,
+  retrieveLink: ((ask: string) => Promise<SourceRetrieval>) | undefined,
+): Promise<AskResult> {
+  if (!retrieveLink) {
+    return {
+      ask,
+      status: 'failed',
+      intent: 'nfpa-link',
+      message: 'NFPA LiNK adapter is not connected.',
+    }
+  }
+
+  try {
+    const retrieval = await retrieveLink(ask)
+    if (!retrieval.ok) {
+      return { ask, status: 'failed', intent: 'nfpa-link', message: retrieval.message }
+    }
+    return {
+      ask,
+      status: 'answered',
+      intent: 'nfpa-link',
+      routerReason: classification.reason,
+      quotedText: retrieval.quotedText,
+      citation: retrieval.citation,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { ask, status: 'failed', intent: 'nfpa-link', message: redact(message) }
   }
 }
 

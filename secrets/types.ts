@@ -1,5 +1,7 @@
 export const SECRET_SERVICE = 'Code Pull Desktop'
 export const SECRET_ACCOUNT = 'claude-api-key'
+export const LINK_USERNAME_ACCOUNT = 'nfpa-link-username'
+export const LINK_PASSWORD_ACCOUNT = 'nfpa-link-password'
 
 export interface KeytarModule {
   getPassword(service: string, account: string): Promise<string | null>
@@ -9,8 +11,8 @@ export interface KeytarModule {
 
 export interface SecretStore {
   backend: 'credential-manager' | 'file-stub'
-  get(): Promise<string | null>
-  set(secret: string): Promise<void>
-  delete(): Promise<void>
-  location(): string
+  get(account?: string): Promise<string | null>
+  set(secret: string, account?: string): Promise<void>
+  delete(account?: string): Promise<void>
+  location(account?: string): string
 }

@@ -5,20 +5,20 @@ export class KeytarSecretStore implements SecretStore {
 
   constructor(private readonly keytar: KeytarModule) {}
 
-  location(): string {
-    return `Windows Credential Manager (${SECRET_SERVICE} / ${SECRET_ACCOUNT})`
+  location(account: string = SECRET_ACCOUNT): string {
+    return `Windows Credential Manager (${SECRET_SERVICE} / ${account})`
   }
 
-  get(): Promise<string | null> {
-    return this.keytar.getPassword(SECRET_SERVICE, SECRET_ACCOUNT)
+  get(account: string = SECRET_ACCOUNT): Promise<string | null> {
+    return this.keytar.getPassword(SECRET_SERVICE, account)
   }
 
-  async set(secret: string): Promise<void> {
-    await this.keytar.setPassword(SECRET_SERVICE, SECRET_ACCOUNT, secret)
+  async set(secret: string, account: string = SECRET_ACCOUNT): Promise<void> {
+    await this.keytar.setPassword(SECRET_SERVICE, account, secret)
   }
 
-  async delete(): Promise<void> {
-    await this.keytar.deletePassword(SECRET_SERVICE, SECRET_ACCOUNT)
+  async delete(account: string = SECRET_ACCOUNT): Promise<void> {
+    await this.keytar.deletePassword(SECRET_SERVICE, account)
   }
 }
 

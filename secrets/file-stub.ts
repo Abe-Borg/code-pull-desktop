@@ -12,13 +12,13 @@ export class FileStubSecretStore implements SecretStore {
 
   constructor(private readonly directory: string) {}
 
-  location(): string {
-    return path.join(this.directory, SECRET_ACCOUNT)
+  location(account: string = SECRET_ACCOUNT): string {
+    return path.join(this.directory, account)
   }
 
-  async get(): Promise<string | null> {
+  async get(account: string = SECRET_ACCOUNT): Promise<string | null> {
     try {
-      const value = (await fs.readFile(this.location(), 'utf8')).trim()
+      const value = (await fs.readFile(this.location(account), 'utf8')).trim()
       return value || null
     } catch (error) {
       if (isMissing(error)) return null
@@ -26,17 +26,17 @@ export class FileStubSecretStore implements SecretStore {
     }
   }
 
-  async set(secret: string): Promise<void> {
+  async set(secret: string, account: string = SECRET_ACCOUNT): Promise<void> {
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 })
     await fs.chmod(this.directory, 0o700)
-    const file = this.location()
+    const file = this.location(account)
     await fs.writeFile(file, `${secret}\n`, { mode: 0o600 })
     await fs.chmod(file, 0o600)
   }
 
-  async delete(): Promise<void> {
+  async delete(account: string = SECRET_ACCOUNT): Promise<void> {
     try {
-      await fs.unlink(this.location())
+      await fs.unlink(this.location(account))
     } catch (error) {
       if (isMissing(error)) return
       throw error

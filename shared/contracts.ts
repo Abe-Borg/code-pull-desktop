@@ -25,11 +25,23 @@ export interface RunAsksRequest {
   text: string
 }
 
+export interface LinkStatus {
+  username: string | null
+  hasPassword: boolean
+  profilePath: string
+  detail: string | null
+}
+
+export interface LinkSignInResult {
+  signedIn: boolean
+  message: string
+}
+
 export type AskResult =
   | {
       ask: string
       status: 'answered'
-      intent: 'echo'
+      intent: 'echo' | 'nfpa-link'
       routerReason: string
       quotedText: string
       citation: Citation
@@ -37,7 +49,7 @@ export type AskResult =
   | {
       ask: string
       status: 'failed'
-      intent: 'unsupported' | 'error'
+      intent: 'unsupported' | 'error' | 'nfpa-link'
       message: string
     }
 

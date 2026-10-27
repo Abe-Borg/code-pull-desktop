@@ -32,9 +32,12 @@ describe('routeAsk', () => {
     }
 
     const result = await routeAsk({
-      ask: 'NFPA 101 2021 section 7.2.1',
+      ask: 'IBC 2021 section 1005.3.1',
       apiKey: KEY,
       fetchImpl,
+      retrieveLink: async () => {
+        throw new Error('LiNK should stay idle for a non-NFPA ask.')
+      },
     })
 
     assert.equal(seen.length, 1)
@@ -44,14 +47,74 @@ describe('routeAsk', () => {
     assert.equal(headers['anthropic-version'], '2023-06-01')
     const body = JSON.parse(String(seen[0].init?.body)) as { model: string; messages: Array<{ content: string }> }
     assert.equal(body.model, ROUTER_MODEL)
-    assert.equal(body.messages[0].content, 'NFPA 101 2021 section 7.2.1')
+    assert.equal(body.messages[0].content, 'IBC 2021 section 1005.3.1')
     assert.equal(result.status, 'answered')
     if (result.status === 'answered') {
-      assert.equal(result.citation.edition, 'NFPA 101 (2021)')
-      assert.equal(result.citation.section, '7.2.1')
-      assert.equal(result.citation.urlOrPath, 'echo://nfpa-101/2021/7-2-1')
+      assert.equal(result.intent, 'echo')
+      assert.equal(result.citation.edition, 'IBC (2021)')
+      assert.equal(result.citation.section, '1005.3.1')
+      assert.equal(result.citation.urlOrPath, 'echo://ibc/2021/1005-3-1')
       assert.match(result.quotedText, /Synthetic excerpt/)
       assert.equal(result.routerReason, 'Section lookup.')
+    }
+  })
+
+  it('sends a clear NFPA section to the LiNK adapter even when Claude says echo', async () => {
+    const fetchImpl: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: '{"intent":"echo","reason":"Section lookup."}' }],
+        }),
+        { status: 200 },
+      )
+    let seen = ''
+    const result = await routeAsk({
+      ask: 'NFPA 101 2021 section 7.2.1',
+      apiKey: KEY,
+      fetchImpl,
+      retrieveLink: async (ask) => {
+        seen = ask
+        return {
+          ok: true,
+          quotedText: 'FIXTURE 7.2.1 The means of egress in this fixture is not publisher text.',
+          citation: {
+            edition: 'NFPA 101 (2021)',
+            section: '7.2.1',
+            urlOrPath: 'https://link.nfpa.org/publications/101/2021/sections/7.2.1',
+          },
+        }
+      },
+    })
+    assert.equal(seen, 'NFPA 101 2021 section 7.2.1')
+    assert.equal(result.status, 'answered')
+    if (result.status === 'answered') {
+      assert.equal(result.intent, 'nfpa-link')
+      assert.equal(result.citation.urlOrPath, 'https://link.nfpa.org/publications/101/2021/sections/7.2.1')
+    }
+  })
+
+  it('shows the LiNK failure when the session is missing', async () => {
+    const fetchImpl: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: '{"intent":"nfpa-link","reason":"NFPA section lookup."}' }],
+        }),
+        { status: 200 },
+      )
+    const result = await routeAsk({
+      ask: 'NFPA 13 2019 section 8.1',
+      apiKey: KEY,
+      fetchImpl,
+      retrieveLink: async () => ({
+        ok: false,
+        code: 'not-signed-in',
+        message: 'NFPA LiNK needs your sign-in.',
+      }),
+    })
+    assert.equal(result.status, 'failed')
+    if (result.status === 'failed') {
+      assert.equal(result.intent, 'nfpa-link')
+      assert.match(result.message, /sign-in/)
     }
   })
 

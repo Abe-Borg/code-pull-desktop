@@ -30,24 +30,26 @@ export async function runSmoke(win: BrowserWindow, artifactDir: string): Promise
     })()
   `)
 
-  await waitForText(win, 'echo://nfpa-101/2021/7-2-1')
+  await waitForText(win, 'https://link.nfpa.org/publications/101/2021/sections/7.2.1')
   await waitForText(win, 'Unsupported')
 
   const cards = (await win.webContents.executeJavaScript(`
     (() => [...document.querySelectorAll('[data-testid="answer-card"]')].map((el) => ({
+      source: el.querySelector('[data-testid="answer-source"]')?.textContent ?? '',
       quote: el.querySelector('[data-testid="answer-quote"]')?.textContent ?? '',
       edition: el.querySelector('[data-testid="answer-edition"]')?.textContent ?? '',
       section: el.querySelector('[data-testid="answer-section"]')?.textContent ?? '',
       path: el.querySelector('[data-testid="answer-path"]')?.textContent ?? '',
       failure: el.querySelector('[data-testid="answer-failure"]')?.textContent ?? '',
     })))()
-  `)) as Array<{ quote: string; edition: string; section: string; path: string; failure: string }>
+  `)) as Array<{ source: string; quote: string; edition: string; section: string; path: string; failure: string }>
 
-  const echo = cards.find((card) => card.path.includes('echo://nfpa-101/2021/7-2-1'))
-  if (!echo) throw new Error(`Smoke did not render an echo card. ${JSON.stringify(cards)}`)
-  if (!echo.quote.includes('Synthetic excerpt')) throw new Error('Echo card is missing the synthetic quote.')
-  if (!echo.edition.includes('NFPA 101 (2021)')) throw new Error(`Unexpected edition: ${echo.edition}`)
-  if (echo.section.trim() !== '7.2.1') throw new Error(`Unexpected section: ${echo.section}`)
+  const link = cards.find((card) => card.path.includes('https://link.nfpa.org/publications/101/2021/sections/7.2.1'))
+  if (!link) throw new Error(`Smoke did not render a LiNK card. ${JSON.stringify(cards)}`)
+  if (!link.quote.includes('FIXTURE')) throw new Error('LiNK smoke card is missing the fixture excerpt.')
+  if (!link.source.includes('NFPA LiNK')) throw new Error(`Unexpected source label: ${link.source}`)
+  if (!link.edition.includes('NFPA 101 (2021)')) throw new Error(`Unexpected edition: ${link.edition}`)
+  if (link.section.trim() !== '7.2.1') throw new Error(`Unexpected section: ${link.section}`)
 
   const unsupported = cards.find((card) => card.failure.includes('Unsupported'))
   if (!unsupported) throw new Error('Smoke did not render an unsupported card.')

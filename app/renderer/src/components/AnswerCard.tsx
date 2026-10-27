@@ -7,8 +7,8 @@ export function AnswerCard({ result }: { result: AskResult }) {
     return (
       <article data-testid="answer-card" className="rounded-lg border border-destructive/30 bg-card px-5 py-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-mono text-[11px] tracking-[0.18em] text-destructive uppercase">
-            {result.intent === 'unsupported' ? 'Unsupported' : 'Claude error'}
+          <p data-testid="answer-source" className="font-mono text-[11px] tracking-[0.18em] text-destructive uppercase">
+            {failureLabel(result.intent)}
           </p>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">{result.ask}</p>
@@ -23,7 +23,9 @@ export function AnswerCard({ result }: { result: AskResult }) {
     <article data-testid="answer-card" className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       <div className="flex items-start justify-between gap-4 border-b border-border bg-[#f7f3ea] px-5 py-3">
         <div>
-          <p className="font-mono text-[11px] tracking-[0.18em] text-primary uppercase">Echo adapter · synthetic</p>
+          <p data-testid="answer-source" className="font-mono text-[11px] tracking-[0.18em] text-primary uppercase">
+            {sourceLabel(result.intent)}
+          </p>
           <p data-testid="answer-edition" className="mt-1 font-serif text-xl text-foreground">
             {result.citation.edition}
           </p>
@@ -37,7 +39,7 @@ export function AnswerCard({ result }: { result: AskResult }) {
       </div>
       <blockquote
         data-testid="answer-quote"
-        className="border-l-4 border-primary px-5 py-4 font-serif text-lg leading-relaxed text-foreground"
+        className="border-l-4 border-primary px-5 py-4 font-serif text-lg leading-relaxed whitespace-pre-wrap text-foreground"
       >
         “{result.quotedText}”
       </blockquote>
@@ -53,6 +55,16 @@ export function AnswerCard({ result }: { result: AskResult }) {
       <p className="sr-only">{result.ask}</p>
     </article>
   )
+}
+
+function sourceLabel(intent: 'echo' | 'nfpa-link'): string {
+  return intent === 'nfpa-link' ? 'NFPA LiNK' : 'Echo adapter · synthetic'
+}
+
+function failureLabel(intent: 'unsupported' | 'error' | 'nfpa-link'): string {
+  if (intent === 'unsupported') return 'Unsupported'
+  if (intent === 'nfpa-link') return 'NFPA LiNK'
+  return 'Claude error'
 }
 
 function CopyPath({ value }: { value: string }) {

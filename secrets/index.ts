@@ -18,5 +18,5 @@ export async function openSecretStore(userDataPath: string): Promise<SecretStore
 }
 
 export { validateClaudeKey, hintForKey } from './validate'
-export { SECRET_ACCOUNT, SECRET_SERVICE } from './types'
+export { LINK_PASSWORD_ACCOUNT, LINK_USERNAME_ACCOUNT, SECRET_ACCOUNT, SECRET_SERVICE } from './types'
 export type { SecretStore } from './types'

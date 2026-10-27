@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   AskProgress,
   HostStatus,
+  LinkSignInResult,
+  LinkStatus,
   RunAsksRequest,
   RunAsksResponse,
   SecretStatus,
@@ -19,6 +21,18 @@ const api = {
   },
   getHostStatus(): Promise<HostStatus> {
     return ipcRenderer.invoke('host:status')
+  },
+  getLinkStatus(): Promise<LinkStatus> {
+    return ipcRenderer.invoke('link:status')
+  },
+  saveLinkLogin(input: { username: string; password: string }): Promise<LinkStatus> {
+    return ipcRenderer.invoke('link:save', input)
+  },
+  clearLinkLogin(): Promise<LinkStatus> {
+    return ipcRenderer.invoke('link:clear')
+  },
+  signInToLink(): Promise<LinkSignInResult> {
+    return ipcRenderer.invoke('link:signIn')
   },
   copyText(text: string): Promise<void> {
     return ipcRenderer.invoke('clipboard:write', text)

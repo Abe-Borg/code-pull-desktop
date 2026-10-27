@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AskMode, AskResult, HostStatus, SecretStatus } from '../../../../shared/contracts'
 import { AnswerCard } from './AnswerCard'
+import { LinkAccess } from './LinkAccess'
 import { SettingsPanel } from './SettingsPanel'
 import { Button } from './ui/button'
 import { Label } from './ui/label'
@@ -68,8 +69,8 @@ export function Workspace({
             <p className="font-mono text-xs tracking-[0.22em] text-primary uppercase">Code Pull</p>
             <h1 className="mt-1 font-serif text-3xl">Section desk</h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              Your Claude key routes the ask. The echo adapter fills a citation card until a source
-              adapter is connected. Key on file: {status.hint}.
+              Your Claude key routes the ask. NFPA sections come from your LiNK session. Other
+              section asks stay on the echo adapter. Key on file: {status.hint}.
             </p>
           </div>
           <Button type="button" variant="outline" onClick={() => setSettingsOpen((open) => !open)}>
@@ -78,7 +79,12 @@ export function Workspace({
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-6">
-        {settingsOpen ? <SettingsPanel status={status} onStatus={onStatus} /> : null}
+        {settingsOpen ? (
+          <>
+            <SettingsPanel status={status} onStatus={onStatus} />
+            <LinkAccess />
+          </>
+        ) : null}
         <form
           className="space-y-4"
           onSubmit={(event) => {
