@@ -1,6 +1,7 @@
 import { buildEchoAnswer } from '../adapters/echo'
 import type { SourceRetrieval } from '../adapters/types'
 import { isClearNfpaSectionAsk } from '../adapters/nfpa-link/target'
+import { isClearUpcodesAsk } from '../adapters/upcodes/target'
 import type { AskResult } from '../shared/contracts'
 import { classifyAsk, redact, type Classification } from './claude'
 
@@ -9,6 +10,7 @@ export async function routeAsk(options: {
   apiKey: string | null
   fetchImpl?: typeof fetch
   retrieveLink?: (ask: string) => Promise<SourceRetrieval>
+  retrieveUpcodes?: (ask: string) => Promise<SourceRetrieval>
 }): Promise<AskResult> {
   const ask = options.ask.trim()
   if (!options.apiKey) {
@@ -33,8 +35,12 @@ export async function routeAsk(options: {
     }
   }
 
-  if (shouldUseNfpaLink(ask, classification)) {
-    return pullFromLink(ask, classification, options.retrieveLink)
+  if (isClearNfpaSectionAsk(ask) || (classification.intent === 'nfpa-link' && !isClearUpcodesAsk(ask))) {
+    return pullFromSource(ask, classification, 'nfpa-link', 'NFPA LiNK adapter is not connected.', options.retrieveLink)
+  }
+
+  if (isClearUpcodesAsk(ask) || classification.intent === 'upcodes') {
+    return pullFromSource(ask, classification, 'upcodes', 'UpCodes adapter is not connected.', options.retrieveUpcodes)
   }
 
   if (classification.intent === 'unsupported') {
@@ -59,40 +65,31 @@ export async function routeAsk(options: {
   }
 }
 
-function shouldUseNfpaLink(ask: string, classification: Classification): boolean {
-  return classification.intent === 'nfpa-link' || isClearNfpaSectionAsk(ask)
-}
-
-async function pullFromLink(
+async function pullFromSource(
   ask: string,
   classification: Classification,
-  retrieveLink: ((ask: string) => Promise<SourceRetrieval>) | undefined,
+  intent: 'nfpa-link' | 'upcodes',
+  disconnected: string,
+  retrieve: ((ask: string) => Promise<SourceRetrieval>) | undefined,
 ): Promise<AskResult> {
-  if (!retrieveLink) {
-    return {
-      ask,
-      status: 'failed',
-      intent: 'nfpa-link',
-      message: 'NFPA LiNK adapter is not connected.',
-    }
+  if (!retrieve) {
+    return { ask, status: 'failed', intent, message: disconnected }
   }
 
   try {
-    const retrieval = await retrieveLink(ask)
-    if (!retrieval.ok) {
-      return { ask, status: 'failed', intent: 'nfpa-link', message: retrieval.message }
-    }
+    const retrieval = await retrieve(ask)
+    if (!retrieval.ok) return { ask, status: 'failed', intent, message: retrieval.message }
     return {
       ask,
       status: 'answered',
-      intent: 'nfpa-link',
+      intent,
       routerReason: classification.reason,
       quotedText: retrieval.quotedText,
       citation: retrieval.citation,
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return { ask, status: 'failed', intent: 'nfpa-link', message: redact(message) }
+    return { ask, status: 'failed', intent, message: redact(message) }
   }
 }
 

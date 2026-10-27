@@ -2,6 +2,7 @@ node_modules
 dist
 dist-electron
 release
+build/playwright-browsers
 *.log
 .env
 .env.*

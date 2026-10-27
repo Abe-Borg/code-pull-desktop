@@ -1,4 +1,6 @@
 import type { BrowserHostPong } from '../browser-host'
+import { fixtureUpcodesResult } from '../upcodes/fixture'
+import { retrieveUpcodesSection, signInToUpcodes } from '../upcodes/session'
 import { fixtureLinkResult } from './fixture'
 import { createPlaywrightDriver } from './playwright-driver'
 import { retrieveNfpaLink, signInToNfpaLink, type LinkDriver } from './session'
@@ -9,9 +11,12 @@ export interface PingRequest {
   type: 'ping'
 }
 
+export type SourceId = 'nfpa-link' | 'upcodes'
+
 export interface RetrieveRequest {
   id: string
   type: 'retrieve'
+  source?: SourceId
   ask: string
   profileDir: string
   username: string | null
@@ -23,6 +28,7 @@ export interface RetrieveRequest {
 export interface SignInRequest {
   id: string
   type: 'sign-in'
+  source?: SourceId
   profileDir: string
   username: string | null
   password: string | null
@@ -58,36 +64,32 @@ export async function handleHostRequest(
   }
 
   const fixture = request.fixture || deps.fixtureMode === true
+  const source = request.source === 'upcodes' ? 'upcodes' : 'nfpa-link'
+  const driver = deps.driver ?? sharedDriver()
   if (request.type === 'sign-in') {
     if (fixture) {
       return {
         id: request.id,
         type: 'sign-in-result',
         signedIn: false,
-        message: 'Smoke mode does not open NFPA LiNK.',
+        message: source === 'upcodes' ? 'Smoke mode does not open UpCodes.' : 'Smoke mode does not open NFPA LiNK.',
       }
     }
-    const result = await signInToNfpaLink({
-      profileDir: request.profileDir,
-      username: request.username,
-      password: request.password,
-      allowHeaded: request.allowHeaded,
-      driver: deps.driver ?? sharedDriver(),
-    })
+    const result =
+      source === 'upcodes'
+        ? await signInToUpcodes({ ...request, driver })
+        : await signInToNfpaLink({ ...request, driver })
     return { id: request.id, type: 'sign-in-result', ...result }
   }
 
   if (fixture) {
-    return { id: request.id, type: 'retrieve-result', result: fixtureLinkResult(request.ask) }
+    const result = source === 'upcodes' ? fixtureUpcodesResult(request.ask) : fixtureLinkResult(request.ask)
+    return { id: request.id, type: 'retrieve-result', result }
   }
 
-  const result = await retrieveNfpaLink({
-    ask: request.ask,
-    profileDir: request.profileDir,
-    username: request.username,
-    password: request.password,
-    allowHeaded: request.allowHeaded,
-    driver: deps.driver ?? sharedDriver(),
-  })
+  const result =
+    source === 'upcodes'
+      ? await retrieveUpcodesSection({ ...request, driver })
+      : await retrieveNfpaLink({ ...request, driver })
   return { id: request.id, type: 'retrieve-result', result }
 }

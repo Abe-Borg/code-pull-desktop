@@ -34,6 +34,18 @@ const api = {
   signInToLink(): Promise<LinkSignInResult> {
     return ipcRenderer.invoke('link:signIn')
   },
+  getUpcodesStatus(): Promise<LinkStatus> {
+    return ipcRenderer.invoke('upcodes:status')
+  },
+  saveUpcodesLogin(input: { username: string; password: string }): Promise<LinkStatus> {
+    return ipcRenderer.invoke('upcodes:save', input)
+  },
+  clearUpcodesLogin(): Promise<LinkStatus> {
+    return ipcRenderer.invoke('upcodes:clear')
+  },
+  signInToUpcodes(): Promise<LinkSignInResult> {
+    return ipcRenderer.invoke('upcodes:signIn')
+  },
   copyText(text: string): Promise<void> {
     return ipcRenderer.invoke('clipboard:write', text)
   },

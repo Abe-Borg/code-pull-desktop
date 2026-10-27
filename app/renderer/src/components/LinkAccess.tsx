@@ -1,10 +1,26 @@
-import { useEffect, useState } from 'react'
-import type { LinkStatus } from '../../../../shared/contracts'
+import { useEffect, useState, type FormEvent } from 'react'
+import type { LinkSignInResult, LinkStatus } from '../../../../shared/contracts'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 
-export function LinkAccess() {
+export function SourceAccess({
+  title,
+  accountName,
+  testId,
+  load,
+  saveLogin,
+  clearLogin,
+  signIn,
+}: {
+  title: string
+  accountName: string
+  testId: string
+  load: () => Promise<LinkStatus>
+  saveLogin: (input: { username: string; password: string }) => Promise<LinkStatus>
+  clearLogin: () => Promise<LinkStatus>
+  signIn: () => Promise<LinkSignInResult>
+}) {
   const [status, setStatus] = useState<LinkStatus | null>(null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -12,20 +28,21 @@ export function LinkAccess() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    void window.codePull.getLinkStatus().then((next) => {
+    void load().then((next) => {
       setStatus(next)
       setUsername(next.username ?? '')
     })
-  }, [])
+  }, [load])
 
-  async function save() {
+  async function save(event: FormEvent) {
+    event.preventDefault()
     setBusy(true)
     setMessage(null)
     try {
-      const next = await window.codePull.saveLinkLogin({ username, password })
+      const next = await saveLogin({ username, password })
       setStatus(next)
       setPassword('')
-      setMessage(next.detail ?? 'LiNK login stored on this computer.')
+      setMessage(next.detail ?? `${title} login stored on this computer.`)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error))
     } finally {
@@ -37,11 +54,11 @@ export function LinkAccess() {
     setBusy(true)
     setMessage(null)
     try {
-      const next = await window.codePull.clearLinkLogin()
+      const next = await clearLogin()
       setStatus(next)
       setUsername('')
       setPassword('')
-      setMessage(next.detail ?? 'Stored LiNK login removed.')
+      setMessage(next.detail ?? `Stored ${title} login removed.`)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error))
     } finally {
@@ -49,11 +66,11 @@ export function LinkAccess() {
     }
   }
 
-  async function signIn() {
+  async function openSignIn() {
     setBusy(true)
-    setMessage('A browser window opens when LiNK asks you to sign in or solve a CAPTCHA.')
+    setMessage(`A browser window opens when ${title} asks you to sign in or solve a CAPTCHA.`)
     try {
-      const result = await window.codePull.signInToLink()
+      const result = await signIn()
       setMessage(result.message)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error))
@@ -64,34 +81,28 @@ export function LinkAccess() {
 
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
-      <h2 className="font-serif text-2xl">NFPA LiNK</h2>
+      <h2 className="font-serif text-2xl">{title}</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Sign in once with your own LiNK account. Code Pull keeps that browser session in{' '}
+        Sign in once with your own {accountName} account. Code Pull keeps that browser session in{' '}
         <span className="font-mono text-xs text-foreground">{status?.profilePath ?? 'the browser profile'}</span>.
         A saved username and password are optional and only fill the form.
       </p>
-      <form
-        className="mt-4 space-y-3"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void save()
-        }}
-      >
+      <form className="mt-4 space-y-3" onSubmit={(event) => void save(event)}>
         <div className="space-y-2">
-          <Label htmlFor="link-username">LiNK username</Label>
+          <Label htmlFor={`${testId}-username`}>{accountName} username</Label>
           <Input
-            id="link-username"
-            data-testid="link-username"
+            id={`${testId}-username`}
+            data-testid={`${testId}-username`}
             autoComplete="off"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="link-password">LiNK password</Label>
+          <Label htmlFor={`${testId}-password`}>{accountName} password</Label>
           <Input
-            id="link-password"
-            data-testid="link-password"
+            id={`${testId}-password`}
+            data-testid={`${testId}-password`}
             type="password"
             autoComplete="off"
             value={password}
@@ -100,16 +111,16 @@ export function LinkAccess() {
           />
         </div>
         {message ? (
-          <p data-testid="link-message" className="text-sm leading-relaxed" role="status">
+          <p data-testid={`${testId}-message`} className="text-sm leading-relaxed" role="status">
             {message}
           </p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={busy || username.trim().length === 0}>
-            Save LiNK login
+            Save {accountName} login
           </Button>
-          <Button type="button" variant="outline" data-testid="link-sign-in" disabled={busy} onClick={() => void signIn()}>
-            {busy ? 'Waiting for LiNK…' : 'Open NFPA LiNK sign-in'}
+          <Button type="button" variant="outline" data-testid={`${testId}-sign-in`} disabled={busy} onClick={() => void openSignIn()}>
+            {busy ? `Waiting for ${accountName}…` : `Open ${title} sign-in`}
           </Button>
           <Button type="button" variant="ghost" disabled={busy || !status?.username} onClick={() => void clear()}>
             Clear stored login

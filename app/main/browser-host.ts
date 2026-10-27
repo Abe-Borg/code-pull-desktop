@@ -1,4 +1,4 @@
-import { utilityProcess, type UtilityProcess } from 'electron'
+import { app, utilityProcess, type UtilityProcess } from 'electron'
 import { randomUUID } from 'node:crypto'
 import * as path from 'node:path'
 import type { BrowserHostPong, LinkRetrieveRequest, LinkSignInRequest, RetrieveResultMessage, SignInResultMessage } from '../../adapters/browser-host'
@@ -7,10 +7,12 @@ import type { SourceRetrieval } from '../../adapters/types'
 
 type HostResponse = BrowserHostPong | RetrieveResultMessage | SignInResultMessage
 
+export type SourceId = 'nfpa-link' | 'upcodes'
+
 export interface BrowserHost {
   status(): Promise<HostStatus>
-  retrieveLink(request: LinkRetrieveRequest): Promise<SourceRetrieval>
-  signIn(request: LinkSignInRequest): Promise<{ signedIn: boolean; message: string }>
+  retrieve(source: SourceId, request: LinkRetrieveRequest): Promise<SourceRetrieval>
+  signIn(source: SourceId, request: LinkSignInRequest): Promise<{ signedIn: boolean; message: string }>
   stop(): void
 }
 
@@ -20,7 +22,7 @@ export function startBrowserHost(hostPath: string): BrowserHost {
     child = utilityProcess.fork(hostPath, [], {
       serviceName: 'code-pull-browser-host',
       stdio: 'pipe',
-      env: { ...process.env } as NodeJS.ProcessEnv,
+      env: childEnv(),
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -93,21 +95,21 @@ export function startBrowserHost(hostPath: string): BrowserHost {
         return { ready: false, chromiumPath: null, detail: message }
       }
     },
-    async retrieveLink(request) {
+    async retrieve(source, request) {
       try {
-        const response = await send<RetrieveResultMessage>({ type: 'retrieve', ...request }, 120_000)
+        const response = await send<RetrieveResultMessage>({ type: 'retrieve', source, ...request }, 120_000)
         if (response.type !== 'retrieve-result') {
           return { ok: false, code: 'navigation-error', message: 'Browser host returned an unexpected reply.' }
         }
         return response.result
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        return { ok: false, code: 'navigation-error', message: `NFPA LiNK could not be opened. ${message}` }
+        return { ok: false, code: 'navigation-error', message: `The source browser could not be opened. ${message}` }
       }
     },
-    async signIn(request) {
+    async signIn(source, request) {
       try {
-        const response = await send<SignInResultMessage>({ type: 'sign-in', ...request }, 200_000)
+        const response = await send<SignInResultMessage>({ type: 'sign-in', source, ...request }, 200_000)
         if (response.type !== 'sign-in-result') {
           return { signedIn: false, message: 'Browser host returned an unexpected reply.' }
         }
@@ -130,7 +132,7 @@ function unavailableHost(message: string): BrowserHost {
       chromiumPath: null,
       detail: `Browser host failed to start. ${message}`,
     }),
-    retrieveLink: async () => ({
+    retrieve: async () => ({
       ok: false,
       code: 'navigation-error',
       message: `Browser host failed to start. ${message}`,
@@ -142,6 +144,12 @@ function unavailableHost(message: string): BrowserHost {
 
 export function browserHostPath(dirname: string): string {
   return path.join(dirname, 'playwright-host.js')
+}
+
+function childEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env }
+  if (app.isPackaged) env.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'playwright-browsers')
+  return env
 }
 
 export function canShowBrowser(): boolean {

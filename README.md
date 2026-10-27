@@ -48,16 +48,16 @@ That writes `release/Code Pull-Setup.exe` via `electron-builder`. See [packaging
 
 The renderer receives a hint (last four characters) and the store location. It does not receive the key again after a successful save.
 
-The file stub exists so a Linux CI agent can boot the app. It is the development stand-in for Credential Manager, not the Windows production store. On Windows a missing `keytar` binding stops the app with an error instead of writing the key to disk.
+The file stub exists so a Linux CI agent can boot the app. It is the development stand-in for Credential Manager, not the Windows production store. The Windows build uses `keytar` when that addon matches Electron, and otherwise calls Credential Manager through PowerShell. Optional LiNK and UpCodes usernames and passwords use the same store. The browser session, not the password, is what later pulls use.
 
 ## Ask flow
 
 1. If no key is stored, the window stays on the paste-key screen.
 2. A single ask sends the whole text box. **One per line** sends each non-empty line, up to 20.
-3. The main process calls the Claude Messages API (`claude-haiku-5-5`) with the stored key and classifies the ask as `nfpa-link`, `echo`, or `unsupported`.
-4. An NFPA publication plus a section is pulled from LiNK even when the classifier says `echo`.
-5. `echo` still builds a synthetic excerpt for other codes. LiNK returns `{ quotedText, citation: { edition, section, urlOrPath } }` from the signed-in page, or a failure card.
-6. A missing key, an HTTP error, a timeout, a missing LiNK session, or a section LiNK did not show is written on that ask's card.
+3. The main process calls the Claude Messages API (`claude-haiku-5-5`) with the stored key and classifies the ask as `nfpa-link`, `upcodes`, `echo`, or `unsupported`.
+4. An NFPA publication plus a section goes to LiNK. IBC, IRC, IFC, and IMC, and any clear UpCodes ask, go to UpCodes.
+5. `echo` still builds a synthetic excerpt for other codes (NEC, ASME, and similar). LiNK and UpCodes return `{ quotedText, citation: { edition, section, urlOrPath } }` from the signed-in page, or a failure card.
+6. A missing key, an HTTP error, a timeout, a missing site session, or a section the site did not show is written on that ask's card.
 
 ## NFPA LiNK
 
@@ -87,9 +87,27 @@ Profile path:
 | macOS | `~/Library/Application Support/CodePullDesktop/browser-profile` |
 | Linux | `~/.local/share/CodePullDesktop/browser-profile` (`$XDG_DATA_HOME/CodePullDesktop/browser-profile` when that variable is set) |
 
-This environment uses the Linux path. A pull with no session, or a publication page that does not contain the section, fails on the card instead of inventing text.
+UpCodes uses the same folder with `browser-profile-upcodes` instead of `browser-profile`. On this machine that is `~/.local/share/CodePullDesktop/browser-profile-upcodes`.
 
-UpCodes is `adapters/upcodes` and returns a not-connected result. The router does not call it.
+Sign in to UpCodes the same way: Settings, **Open UpCodes sign-in**, your own account. Ask `IBC 2021 section 1005.3.1`. A pull with no session, or a page that does not contain the section, fails on the card.
+
+## Prototype install
+
+The unsigned installer is `Code-Pull-Setup.exe`. It is not code-signed. Windows SmartScreen will warn. Choose **More info**, then **Run anyway**.
+
+Chromium for Playwright is inside the installer, so Node is not required after setup.
+
+1. Copy `Code-Pull-Setup.exe` onto the Windows PC.
+2. Run it. Leave the install directory at the default, or pick another folder.
+3. Start **Code Pull** from the Start menu.
+4. Paste your Claude API key.
+5. Settings → **Open NFPA LiNK sign-in**. Sign in with your LiNK account.
+6. Settings → **Open UpCodes sign-in**. Sign in with your UpCodes account.
+7. Ask for a section, for example `NFPA 101 2021 section 7.2.1` or `IBC 2021 section 1005.3.1`.
+
+What works: Claude key routing, NFPA LiNK pulls, UpCodes pulls for IBC, IRC, IFC, and IMC, and echo cards for other section asks. What is unsigned: the installer and the app. Expect the SmartScreen warning.
+
+Build it from source with `npm run pack`. The NSIS target is `packaging/electron-builder.yml`.
 
 ## Playwright path
 
@@ -100,7 +118,7 @@ UpCodes is `adapters/upcodes` and returns a not-connected result. The router doe
 ```
 app/main        Electron main, preload, IPC, Playwright utility process
 app/renderer    React desk (onboarding, ask box, answer cards)
-adapters        Echo adapter, NFPA LiNK, UpCodes stub, browser-host messages
+adapters        Echo adapter, NFPA LiNK, UpCodes, browser-host messages
 router          Ask splitting and the Claude Messages call
 secrets         Credential Manager binding and the non-Windows file stub
 packaging       electron-builder config and notes
@@ -114,10 +132,9 @@ npm test
 npm run smoke
 ```
 
-`npm run smoke` builds, launches Electron, stores a fake key through the onboarding screen, and checks a fixture LiNK card plus an unsupported card. On Linux without a display it uses `xvfb-run`. Windows launches keep the renderer sandbox on. Linux and macOS launches turn it off, because Chromium often cannot broker that sandbox outside Windows. Set `CODE_PULL_NO_SANDBOX=1` only if you need the same behavior on Windows while debugging. Smoke mode never calls the Claude API or NFPA LiNK. It uses an in-process stand-in so the card path can be checked without a key that bills.
+`npm run smoke` builds, launches Electron, stores a fake key through the onboarding screen, and checks fixture LiNK and UpCodes cards plus an unsupported card. On Linux without a display it uses `xvfb-run`. Windows launches keep the renderer sandbox on. Linux and macOS launches turn it off, because Chromium often cannot broker that sandbox outside Windows. Set `CODE_PULL_NO_SANDBOX=1` only if you need the same behavior on Windows while debugging. Smoke mode never calls the Claude API, NFPA LiNK, or UpCodes.
 
 ## Out of scope here
 
-- UpCodes retrieval
 - A signed installer
 - Any shared subscription or shared runner

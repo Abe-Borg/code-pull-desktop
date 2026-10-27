@@ -32,11 +32,14 @@ describe('routeAsk', () => {
     }
 
     const result = await routeAsk({
-      ask: 'IBC 2021 section 1005.3.1',
+      ask: 'NEC 2023 section 210.8',
       apiKey: KEY,
       fetchImpl,
       retrieveLink: async () => {
         throw new Error('LiNK should stay idle for a non-NFPA ask.')
+      },
+      retrieveUpcodes: async () => {
+        throw new Error('UpCodes should stay idle for a non-ICC ask.')
       },
     })
 
@@ -47,13 +50,13 @@ describe('routeAsk', () => {
     assert.equal(headers['anthropic-version'], '2023-06-01')
     const body = JSON.parse(String(seen[0].init?.body)) as { model: string; messages: Array<{ content: string }> }
     assert.equal(body.model, ROUTER_MODEL)
-    assert.equal(body.messages[0].content, 'IBC 2021 section 1005.3.1')
+    assert.equal(body.messages[0].content, 'NEC 2023 section 210.8')
     assert.equal(result.status, 'answered')
     if (result.status === 'answered') {
       assert.equal(result.intent, 'echo')
-      assert.equal(result.citation.edition, 'IBC (2021)')
-      assert.equal(result.citation.section, '1005.3.1')
-      assert.equal(result.citation.urlOrPath, 'echo://ibc/2021/1005-3-1')
+      assert.equal(result.citation.edition, 'NEC (2023)')
+      assert.equal(result.citation.section, '210.8')
+      assert.equal(result.citation.urlOrPath, 'echo://nec/2023/210-8')
       assert.match(result.quotedText, /Synthetic excerpt/)
       assert.equal(result.routerReason, 'Section lookup.')
     }
@@ -90,6 +93,39 @@ describe('routeAsk', () => {
     if (result.status === 'answered') {
       assert.equal(result.intent, 'nfpa-link')
       assert.equal(result.citation.urlOrPath, 'https://link.nfpa.org/publications/101/2021/sections/7.2.1')
+    }
+  })
+
+  it('sends a clear IBC section to UpCodes even when Claude says echo', async () => {
+    const fetchImpl: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: '{"intent":"echo","reason":"Section lookup."}' }],
+        }),
+        { status: 200 },
+      )
+    const result = await routeAsk({
+      ask: 'IBC 2021 section 1005.3.1',
+      apiKey: KEY,
+      fetchImpl,
+      retrieveLink: async () => {
+        throw new Error('LiNK should stay idle for IBC.')
+      },
+      retrieveUpcodes: async () => ({
+        ok: true,
+        quotedText: 'FIXTURE 1005.3.1 This egress width sentence is not publisher text.',
+        citation: {
+          edition: 'IBC (2021)',
+          section: '1005.3.1',
+          urlOrPath: 'https://up.codes/viewer/ibc-2021/chapter/10#1005.3.1',
+        },
+      }),
+    })
+    assert.equal(result.status, 'answered')
+    if (result.status === 'answered') {
+      assert.equal(result.intent, 'upcodes')
+      assert.equal(result.citation.edition, 'IBC (2021)')
+      assert.equal(result.citation.urlOrPath, 'https://up.codes/viewer/ibc-2021/chapter/10#1005.3.1')
     }
   })
 

@@ -1,6 +1,15 @@
 import { clipboard, ipcMain, type IpcMainInvokeEvent } from 'electron'
-import { browserProfileDir } from '../../adapters/nfpa-link/profile'
-import { hintForKey, LINK_PASSWORD_ACCOUNT, LINK_USERNAME_ACCOUNT, validateClaudeKey, type SecretStore } from '../../secrets'
+import { browserProfileDir, upcodesProfileDir } from '../../adapters/nfpa-link/profile'
+import {
+  hintForKey,
+  LINK_PASSWORD_ACCOUNT,
+  LINK_USERNAME_ACCOUNT,
+  UPCODES_PASSWORD_ACCOUNT,
+  UPCODES_USERNAME_ACCOUNT,
+  validateClaudeKey,
+  type SecretStore,
+} from '../../secrets'
+import type { SourceId } from './browser-host'
 import { AskInputError, routeAsk, splitAsks } from '../../router'
 import { canShowBrowser, type BrowserHost } from './browser-host'
 import type { AskMode, LinkStatus, RunAsksRequest, SecretStatus } from '../../shared/contracts'
@@ -84,49 +93,21 @@ export function registerIpc(options: {
 
   ipcMain.handle('host:status', async () => options.host.status())
 
-  ipcMain.handle('link:status', async (): Promise<LinkStatus> => readLinkStatus(options.getStore))
-
-  ipcMain.handle('link:save', async (_event, raw: unknown): Promise<LinkStatus> => {
-    const username = typeof (raw as { username?: unknown } | null)?.username === 'string' ? (raw as { username: string }).username.trim() : ''
-    const password = typeof (raw as { password?: unknown } | null)?.password === 'string' ? (raw as { password: string }).password.trim() : ''
-    if (!username) {
-      return { username: null, hasPassword: false, profilePath: browserProfileDir(), detail: 'Enter the NFPA LiNK username.' }
-    }
-    try {
-      const store = await options.getStore()
-      await store.set(username, LINK_USERNAME_ACCOUNT)
-      if (password) await store.set(password, LINK_PASSWORD_ACCOUNT)
-      else await store.delete(LINK_PASSWORD_ACCOUNT)
-      return readLinkStatus(options.getStore)
-    } catch (error) {
-      return { username: null, hasPassword: false, profilePath: browserProfileDir(), detail: error instanceof Error ? error.message : String(error) }
-    }
+  registerSiteLogin(options, {
+    channel: 'link',
+    usernameAccount: LINK_USERNAME_ACCOUNT,
+    passwordAccount: LINK_PASSWORD_ACCOUNT,
+    profileDir: browserProfileDir,
+    source: 'nfpa-link',
+    usernamePrompt: 'Enter the NFPA LiNK username.',
   })
-
-  ipcMain.handle('link:clear', async (): Promise<LinkStatus> => {
-    try {
-      const store = await options.getStore()
-      await store.delete(LINK_USERNAME_ACCOUNT)
-      await store.delete(LINK_PASSWORD_ACCOUNT)
-      return readLinkStatus(options.getStore)
-    } catch (error) {
-      return { username: null, hasPassword: false, profilePath: browserProfileDir(), detail: error instanceof Error ? error.message : String(error) }
-    }
-  })
-
-  ipcMain.handle('link:signIn', async () => {
-    try {
-      const store = await options.getStore()
-      return options.host.signIn({
-        profileDir: browserProfileDir(),
-        username: await store.get(LINK_USERNAME_ACCOUNT),
-        password: await store.get(LINK_PASSWORD_ACCOUNT),
-        allowHeaded: canShowBrowser() && process.env.CODE_PULL_SMOKE !== '1',
-        fixture: process.env.CODE_PULL_SMOKE === '1',
-      })
-    } catch (error) {
-      return { signedIn: false, message: error instanceof Error ? error.message : String(error) }
-    }
+  registerSiteLogin(options, {
+    channel: 'upcodes',
+    usernameAccount: UPCODES_USERNAME_ACCOUNT,
+    passwordAccount: UPCODES_PASSWORD_ACCOUNT,
+    profileDir: upcodesProfileDir,
+    source: 'upcodes',
+    usernamePrompt: 'Enter the UpCodes username.',
   })
 
   ipcMain.handle('clipboard:write', async (_event, text: unknown) => {
@@ -161,7 +142,8 @@ export function registerIpc(options: {
         ask: asks[index],
         apiKey,
         fetchImpl: options.fetchImpl,
-        retrieveLink: (ask) => retrieveLink(options, ask),
+        retrieveLink: (ask) => retrieveSource(options, 'nfpa-link', ask),
+        retrieveUpcodes: (ask) => retrieveSource(options, 'upcodes', ask),
       })
       results.push(result)
       if (!event.sender.isDestroyed()) {
@@ -191,35 +173,95 @@ function isMode(value: unknown): value is AskMode {
   return value === 'single' || value === 'list'
 }
 
-async function retrieveLink(
+async function retrieveSource(
   options: { getStore: () => Promise<SecretStore>; host: BrowserHost },
+  source: SourceId,
   ask: string,
 ) {
   const store = await options.getStore()
-  return options.host.retrieveLink({
+  const usernameAccount = source === 'upcodes' ? UPCODES_USERNAME_ACCOUNT : LINK_USERNAME_ACCOUNT
+  const passwordAccount = source === 'upcodes' ? UPCODES_PASSWORD_ACCOUNT : LINK_PASSWORD_ACCOUNT
+  return options.host.retrieve(source, {
     ask,
-    profileDir: browserProfileDir(),
-    username: await store.get(LINK_USERNAME_ACCOUNT),
-    password: await store.get(LINK_PASSWORD_ACCOUNT),
+    profileDir: source === 'upcodes' ? upcodesProfileDir() : browserProfileDir(),
+    username: await store.get(usernameAccount),
+    password: await store.get(passwordAccount),
     allowHeaded: canShowBrowser() && process.env.CODE_PULL_SMOKE !== '1',
     fixture: process.env.CODE_PULL_SMOKE === '1',
   })
 }
 
-async function readLinkStatus(getStore: () => Promise<SecretStore>): Promise<LinkStatus> {
+function registerSiteLogin(
+  options: { getStore: () => Promise<SecretStore>; host: BrowserHost },
+  site: {
+    channel: 'link' | 'upcodes'
+    usernameAccount: string
+    passwordAccount: string
+    profileDir: () => string
+    source: SourceId
+    usernamePrompt: string
+  },
+) {
+  ipcMain.handle(`${site.channel}:status`, () => readSiteStatus(options.getStore, site))
+  ipcMain.handle(`${site.channel}:save`, async (_event, raw: unknown) => {
+    const username = typeof (raw as { username?: unknown } | null)?.username === 'string' ? (raw as { username: string }).username.trim() : ''
+    const password = typeof (raw as { password?: unknown } | null)?.password === 'string' ? (raw as { password: string }).password.trim() : ''
+    if (!username) {
+      return { username: null, hasPassword: false, profilePath: site.profileDir(), detail: site.usernamePrompt }
+    }
+    try {
+      const store = await options.getStore()
+      await store.set(username, site.usernameAccount)
+      if (password) await store.set(password, site.passwordAccount)
+      else await store.delete(site.passwordAccount)
+      return readSiteStatus(options.getStore, site)
+    } catch (error) {
+      return { username: null, hasPassword: false, profilePath: site.profileDir(), detail: error instanceof Error ? error.message : String(error) }
+    }
+  })
+  ipcMain.handle(`${site.channel}:clear`, async () => {
+    try {
+      const store = await options.getStore()
+      await store.delete(site.usernameAccount)
+      await store.delete(site.passwordAccount)
+      return readSiteStatus(options.getStore, site)
+    } catch (error) {
+      return { username: null, hasPassword: false, profilePath: site.profileDir(), detail: error instanceof Error ? error.message : String(error) }
+    }
+  })
+  ipcMain.handle(`${site.channel}:signIn`, async () => {
+    try {
+      const store = await options.getStore()
+      return options.host.signIn(site.source, {
+        profileDir: site.profileDir(),
+        username: await store.get(site.usernameAccount),
+        password: await store.get(site.passwordAccount),
+        allowHeaded: canShowBrowser() && process.env.CODE_PULL_SMOKE !== '1',
+        fixture: process.env.CODE_PULL_SMOKE === '1',
+      })
+    } catch (error) {
+      return { signedIn: false, message: error instanceof Error ? error.message : String(error) }
+    }
+  })
+}
+
+async function readSiteStatus(
+  getStore: () => Promise<SecretStore>,
+  site: { usernameAccount: string; passwordAccount: string; profileDir: () => string },
+): Promise<LinkStatus> {
   try {
     const store = await getStore()
     return {
-      username: await store.get(LINK_USERNAME_ACCOUNT),
-      hasPassword: Boolean(await store.get(LINK_PASSWORD_ACCOUNT)),
-      profilePath: browserProfileDir(),
+      username: await store.get(site.usernameAccount),
+      hasPassword: Boolean(await store.get(site.passwordAccount)),
+      profilePath: site.profileDir(),
       detail: null,
     }
   } catch (error) {
     return {
       username: null,
       hasPassword: false,
-      profilePath: browserProfileDir(),
+      profilePath: site.profileDir(),
       detail: error instanceof Error ? error.message : String(error),
     }
   }

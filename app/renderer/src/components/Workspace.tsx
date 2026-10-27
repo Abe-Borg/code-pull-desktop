@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AskMode, AskResult, HostStatus, SecretStatus } from '../../../../shared/contracts'
 import { AnswerCard } from './AnswerCard'
-import { LinkAccess } from './LinkAccess'
+import { SourceAccess } from './LinkAccess'
 import { SettingsPanel } from './SettingsPanel'
 import { Button } from './ui/button'
 import { Label } from './ui/label'
@@ -69,8 +69,8 @@ export function Workspace({
             <p className="font-mono text-xs tracking-[0.22em] text-primary uppercase">Code Pull</p>
             <h1 className="mt-1 font-serif text-3xl">Section desk</h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              Your Claude key routes the ask. NFPA sections come from your LiNK session. Other
-              section asks stay on the echo adapter. Key on file: {status.hint}.
+              Your Claude key routes the ask. NFPA sections use your LiNK session. IBC, IRC, IFC,
+              and IMC use your UpCodes session. Key on file: {status.hint}.
             </p>
           </div>
           <Button type="button" variant="outline" onClick={() => setSettingsOpen((open) => !open)}>
@@ -82,7 +82,24 @@ export function Workspace({
         {settingsOpen ? (
           <>
             <SettingsPanel status={status} onStatus={onStatus} />
-            <LinkAccess />
+            <SourceAccess
+              title="NFPA LiNK"
+              accountName="LiNK"
+              testId="link"
+              load={window.codePull.getLinkStatus}
+              saveLogin={window.codePull.saveLinkLogin}
+              clearLogin={window.codePull.clearLinkLogin}
+              signIn={window.codePull.signInToLink}
+            />
+            <SourceAccess
+              title="UpCodes"
+              accountName="UpCodes"
+              testId="upcodes"
+              load={window.codePull.getUpcodesStatus}
+              saveLogin={window.codePull.saveUpcodesLogin}
+              clearLogin={window.codePull.clearUpcodesLogin}
+              signIn={window.codePull.signInToUpcodes}
+            />
           </>
         ) : null}
         <form

@@ -41,7 +41,7 @@ export type AskResult =
   | {
       ask: string
       status: 'answered'
-      intent: 'echo' | 'nfpa-link'
+      intent: 'echo' | 'nfpa-link' | 'upcodes'
       routerReason: string
       quotedText: string
       citation: Citation
@@ -49,7 +49,7 @@ export type AskResult =
   | {
       ask: string
       status: 'failed'
-      intent: 'unsupported' | 'error' | 'nfpa-link'
+      intent: 'unsupported' | 'error' | 'nfpa-link' | 'upcodes'
       message: string
     }
 

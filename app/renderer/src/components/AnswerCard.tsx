@@ -57,13 +57,16 @@ export function AnswerCard({ result }: { result: AskResult }) {
   )
 }
 
-function sourceLabel(intent: 'echo' | 'nfpa-link'): string {
-  return intent === 'nfpa-link' ? 'NFPA LiNK' : 'Echo adapter · synthetic'
+function sourceLabel(intent: 'echo' | 'nfpa-link' | 'upcodes'): string {
+  if (intent === 'nfpa-link') return 'NFPA LiNK'
+  if (intent === 'upcodes') return 'UpCodes'
+  return 'Echo adapter · synthetic'
 }
 
-function failureLabel(intent: 'unsupported' | 'error' | 'nfpa-link'): string {
+function failureLabel(intent: 'unsupported' | 'error' | 'nfpa-link' | 'upcodes'): string {
   if (intent === 'unsupported') return 'Unsupported'
   if (intent === 'nfpa-link') return 'NFPA LiNK'
+  if (intent === 'upcodes') return 'UpCodes'
   return 'Claude error'
 }
 

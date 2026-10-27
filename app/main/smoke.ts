@@ -24,13 +24,14 @@ export async function runSmoke(win: BrowserWindow, artifactDir: string): Promise
       document.querySelector('[data-testid="mode-list"]').click()
       const input = document.querySelector('[data-testid="ask-input"]')
       const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
-      setter?.call(input, 'NFPA 101 2021 section 7.2.1\\nWhat is the weather in Paris?')
+      setter?.call(input, 'NFPA 101 2021 section 7.2.1\\nIBC 2021 section 1005.3.1\\nWhat is the weather in Paris?')
       input.dispatchEvent(new Event('input', { bubbles: true }))
       document.querySelector('[data-testid="pull"]').click()
     })()
   `)
 
   await waitForText(win, 'https://link.nfpa.org/publications/101/2021/sections/7.2.1')
+  await waitForText(win, 'https://up.codes/viewer/ibc-2021/chapter/10#1005.3.1')
   await waitForText(win, 'Unsupported')
 
   const cards = (await win.webContents.executeJavaScript(`
@@ -50,6 +51,13 @@ export async function runSmoke(win: BrowserWindow, artifactDir: string): Promise
   if (!link.source.includes('NFPA LiNK')) throw new Error(`Unexpected source label: ${link.source}`)
   if (!link.edition.includes('NFPA 101 (2021)')) throw new Error(`Unexpected edition: ${link.edition}`)
   if (link.section.trim() !== '7.2.1') throw new Error(`Unexpected section: ${link.section}`)
+
+  const upcodes = cards.find((card) => card.path.includes('https://up.codes/viewer/ibc-2021/chapter/10#1005.3.1'))
+  if (!upcodes) throw new Error(`Smoke did not render an UpCodes card. ${JSON.stringify(cards)}`)
+  if (!upcodes.quote.includes('FIXTURE')) throw new Error('UpCodes smoke card is missing the fixture excerpt.')
+  if (!upcodes.source.includes('UpCodes')) throw new Error(`Unexpected UpCodes label: ${upcodes.source}`)
+  if (!upcodes.edition.includes('IBC (2021)')) throw new Error(`Unexpected UpCodes edition: ${upcodes.edition}`)
+  if (upcodes.section.trim() !== '1005.3.1') throw new Error(`Unexpected UpCodes section: ${upcodes.section}`)
 
   const unsupported = cards.find((card) => card.failure.includes('Unsupported'))
   if (!unsupported) throw new Error('Smoke did not render an unsupported card.')

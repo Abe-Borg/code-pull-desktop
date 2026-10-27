@@ -1,7 +1,7 @@
 appId: com.codepull.desktop
 productName: Code Pull
 asar: true
-npmRebuild: true
+npmRebuild: false
 directories:
   output: release
 files:
@@ -12,12 +12,15 @@ asarUnpack:
   - "**/node_modules/keytar/**"
   - "**/node_modules/playwright/**"
   - "**/node_modules/playwright-core/**"
+extraResources:
+  - from: build/playwright-browsers
+    to: playwright-browsers
 win:
   target:
     - target: nsis
       arch:
         - x64
-  artifactName: ${productName}-Setup.${ext}
+  artifactName: Code-Pull-Setup.${ext}
   signAndEditExecutable: false
 nsis:
   oneClick: false

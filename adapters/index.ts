@@ -1,5 +1,6 @@
 export { buildEchoAnswer, citationForAsk, echoAdapter } from './echo'
 export { browserProfileDir } from './nfpa-link/profile'
-export { retrieveUpcodes } from './upcodes'
+export { fixtureUpcodesResult } from './upcodes/fixture'
+export { upcodesProfileDir } from './nfpa-link/profile'
 export type { BrowserHostPong, LinkRetrieveRequest, LinkSignInRequest } from './browser-host'
 export type { SectionAdapter, SectionAnswer, SourceRetrieval } from './types'

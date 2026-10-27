@@ -1,6 +1,7 @@
-function intentFor(ask: string): 'nfpa-link' | 'echo' | 'unsupported' {
+function intentFor(ask: string): 'nfpa-link' | 'upcodes' | 'echo' | 'unsupported' {
   if (/\bnfpa\s+\d+/i.test(ask)) return 'nfpa-link'
-  if (/\b(ibc|irc|ifc|imc|nec|asme|astm|section|§)\b/i.test(ask)) return 'echo'
+  if (/\b(ibc|irc|ifc|imc)\b/i.test(ask) || /\bupcodes\b/i.test(ask)) return 'upcodes'
+  if (/\b(nec|asme|astm|section|§)\b/i.test(ask)) return 'echo'
   return 'unsupported'
 }
 
@@ -26,7 +27,9 @@ export function createSmokeFetch(): typeof fetch {
                 ? 'Not a section lookup.'
                 : intent === 'nfpa-link'
                   ? 'NFPA section lookup.'
-                  : 'Section lookup.',
+                  : intent === 'upcodes'
+                    ? 'UpCodes section lookup.'
+                    : 'Section lookup.',
           }),
         },
       ],
