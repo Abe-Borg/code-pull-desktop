@@ -3,6 +3,7 @@ dist
 dist-electron
 release
 build/playwright-browsers
+artifacts/*.exe
 *.log
 .env
 .env.*
